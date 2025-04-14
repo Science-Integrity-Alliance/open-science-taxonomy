@@ -54,7 +54,7 @@ The interactive visualization is built using the following technologies:
 ## Citation
 If you use this project in your work, please cite it as follows:
 
-**Science Integrity Alliance (2025). Open Science Taxonomy. www.science-integrity-alliance.github.io/open-science-taxonomy. Adapted from Silveira L. da, Ribeiro N. C., Melero R. et al (2023). Taxonomia da Ciência Aberta: revisada e ampliada. Encontros Bibli: Revista eletrônica De Biblioteconomia E Ciência Da informação, 28, 1–22. doi.org/10.5007/1518-2924.2023.e91712.**
+**Science Integrity Alliance (2025). Open Science Taxonomy. www.github.com/Science-Integrity-Alliance/open-science-taxonomy. Last updated 14th April 2025. Adapted from Silveira L. da, Ribeiro N. C., Melero R. et al (2023). Taxonomia da Ciência Aberta: revisada e ampliada. Encontros Bibli: Revista eletrônica De Biblioteconomia E Ciência Da informação, 28, 1–22. doi.org/10.5007/1518-2924.2023.e91712.**
 
 ## License
 The original visualization and the present work are licensed under a **Creative Commons Attribution 4.0 International License.(CC BY 4.0)**.
