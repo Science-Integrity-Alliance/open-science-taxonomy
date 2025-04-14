@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Open Science Taxonomy</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        body { margin: 0; padding: 0; background-color: black; color: white; font-family: Arial, sans-serif; }
+        #sankey-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; }
+        #sankey-diagram { width: 100%; height: 100%; }
+        .hoverlabel, .hovertext, g.hoverlayer { opacity: 0 !important; visibility: hidden !important; display: none !important; }
+        g.sankey-links path { opacity: 0.6 !important; transition: opacity 0.2s ease; }
+        g.sankey-links path.highlighted { opacity: 1 !important; }
+        g.sankey text { fill: white !important; font-weight: bold; cursor: pointer; white-space: nowrap !important; text-align: left !important; overflow: visible !important; transition: opacity 0.2s ease; font-size: 13px !important; }
+        g.sankey text[data-level="0"] { font-size: 20px !important; opacity: 1 !important; }
+        g.sankey text[data-level="1"] { font-size: 16px !important; opacity: 0.8 !important; }
+        g.sankey text[data-level="2"], g.sankey text[data-level="3"], g.sankey text[data-level="4"] { font-size: 14px !important; opacity: 0.7 !important; }
+        g.sankey text.highlighted { fill: white !important; opacity: 1 !important; }
+    </style>
+</head>
+<body>
+    <div id="sankey-container">
+        <div id="sankey-diagram"></div>
+    </div>
+    
+    <script type="text/javascript">
+        const sources = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 11, 11, 11, 13, 13, 15, 15, 16, 16, 16, 16, 2, 2, 2, 2, 26, 26, 26, 26, 26, 26, 3, 3, 3, 37, 37, 37, 37, 37, 4, 4, 4, 4, 4, 4, 48, 48, 48, 48, 48, 48, 5, 5, 5, 57, 57, 6, 6, 6, 7, 7, 64, 64, 64, 64, 64, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 81, 81, 9, 9, 9, 9, 9, 10, 10, 10];
+        const targets = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 12, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 37, 36, 38, 39, 40, 41, 42, 43, 44, 48, 46, 45, 47, 49, 50, 51, 52, 53, 54, 57, 56, 55, 58, 59, 61, 60, 62, 64, 63, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91];
+        
+        // Build graph structure
+        const graph = {};
+        for (let i = 0; i < sources.length; i++) {
+            const src = sources[i];
+            const tgt = targets[i];
+            if (!graph[src]) graph[src] = [];
+            graph[src].push({target: tgt, linkIndex: i});
+        }
+        
+        // Find downstream paths
+        function findDownstreamPaths(startNode) {
+            const visited = new Set();
+            const links = new Set();
+            
+            function dfs(node) {
+                if (visited.has(node)) return;
+                visited.add(node);
+                if (!graph[node]) return;
+                for (const {target, linkIndex} of graph[node]) {
+                    links.add(linkIndex);
+                    dfs(target);
+                }
+            }
+            
+            dfs(startNode);
+            return Array.from(links);
+        }
+        
+        // Find affected labels
+        function findAffectedLabels(pathIndex) {
+            const sourceNode = sources[pathIndex];
+            const targetNode = targets[pathIndex];
+            const affectedNodes = new Set([targetNode]);
+            
+            function findDownstreamNodes(node) {
+                for (let i = 0; i < sources.length; i++) {
+                    if (sources[i] === node) {
+                        affectedNodes.add(targets[i]);
+                        findDownstreamNodes(targets[i]);
+                    }
+                }
+            }
+            
+            findDownstreamNodes(targetNode);
+            return Array.from(affectedNodes);
+        }
+        
+        // Create the visualization
+        const data = [{
+            type: "sankey",
+            arrangement: "fixed",
+            valueformat: ".0f",
+            node: {
+                pad: 15, 
+                thickness: 15, 
+                line: { color: "black", width: 0.5 },
+                label: ["Open Science", "Open Access (OA)", "Open Data", "Open Reproducible Research", "Open and Responsible Evaluation", "Policies, Declarations and Guidelines", "Open Education", "Open Innovation", "Open Infrastructure and Tools", "Citizen Science, Open and Participative", "Open Dialogue with Knowledge Systems", "OA Publication", "OA Initiatives", "Use and Re-Use of Open Publications", "OA Books", "OA Journal Publishing", "Self-Archiving (Green OA)", "Copyrights", "Open Licenses", "No-Fee OA Journals (Diamond)", "APC-Based Journals (Gold OA)", "Institutional Repositories", "Thematic Repositories", "Consortium Repositories", "Preprint Repositories", "Data Protection", "Open Research Data", "Open Data Initiatives", "Open Governmental Data", "FAIR Data Principles", "Research Data Policies", "Research Data Management", "Research Data Preservation", "Data Journals", "Data Repositories", "Ethics and Integrity in Research", "Research Integrity Initiatives", "Open and Reproducible Research", "Open Laboratory Books", "Open Science Workflows", "Open Code/Open Source Software", "Guidelines for Reproducibility", "Reproducibility Tests", "Definition of Open Evaluation", "Open Peer Evaluation", "Open Tools for Research Evaluation", "Qualitative and Transparent Curricular Evaluation", "Open and Responsible Evaluation Initiatives", "Open and Responsible Metrics", "Altmetrics", "Cybermetrics", "Semantometrics", "Informetrics", "Webometrics", "Open Citations", "Funder Policies", "Institutional Policies", "Governmental Policies", "Regional Policies", "National Policies", "E-Learning Platforms", "Open Educational Resources", "Open Educational Initiatives", "Open Research Initiatives", "Types of Open Innovation", "Makers", "Co-Creation", "Crowdsourcing", "Labs", "Other Forms and Spaces", "Open Code Repositories", "Open Service Providers", "Collectors/Compilers/Harvesters", "Open Collaborative Platforms", "Open Teams", "Open Science Platforms", "Open Laboratories", "Federated infrastructure", "Open Workflow Tools", "Open Infrastructure Initiatives", "Interoperability Protocols and Guidelines", "Digital Preservation in Open Science", "Data Integrity", "Digital Preservation Systems and Tools", "Citizen Laboratory", "Scientific Dissemination", "Collaboration Networks", "Distributed Computing", "Citizen Science Initiatives", "CARE Principles", "Cultural Diversity", "Equity"],
+                color: ["rgba(100, 100, 100, 0.1)", "rgb(33, 150, 243)", "rgb(244, 81, 30)", "rgb(156, 39, 176)", "rgb(255, 152, 0)", "rgb(3, 169, 144)", "rgb(255, 193, 7)", "rgb(233, 30, 99)", "rgb(46, 184, 92)", "rgb(33, 150, 243)", "rgb(244, 81, 30)", "rgb(33, 150, 243)", "rgb(33, 150, 243)", "rgb(33, 150, 243)", "rgb(33, 150, 243)", "rgb(33, 150, 243)", "rgb(33, 150, 243)", "rgb(33, 150, 243)", "rgb(33, 150, 243)", "rgb(33, 150, 243)", "rgb(33, 150, 243)", "rgb(33, 150, 243)", "rgb(33, 150, 243)", "rgb(33, 150, 243)", "rgb(33, 150, 243)", "rgb(244, 81, 30)", "rgb(244, 81, 30)", "rgb(244, 81, 30)", "rgb(244, 81, 30)", "rgb(244, 81, 30)", "rgb(244, 81, 30)", "rgb(244, 81, 30)", "rgb(244, 81, 30)", "rgb(244, 81, 30)", "rgb(244, 81, 30)", "rgb(156, 39, 176)", "rgb(156, 39, 176)", "rgb(156, 39, 176)", "rgb(156, 39, 176)", "rgb(156, 39, 176)", "rgb(156, 39, 176)", "rgb(156, 39, 176)", "rgb(156, 39, 176)", "rgb(255, 152, 0)", "rgb(255, 152, 0)", "rgb(255, 152, 0)", "rgb(255, 152, 0)", "rgb(255, 152, 0)", "rgb(255, 152, 0)", "rgb(255, 152, 0)", "rgb(255, 152, 0)", "rgb(255, 152, 0)", "rgb(255, 152, 0)", "rgb(255, 152, 0)", "rgb(255, 152, 0)", "rgb(3, 169, 144)", "rgb(3, 169, 144)", "rgb(3, 169, 144)", "rgb(3, 169, 144)", "rgb(3, 169, 144)", "rgb(255, 193, 7)", "rgb(255, 193, 7)", "rgb(255, 193, 7)", "rgb(233, 30, 99)", "rgb(233, 30, 99)", "rgb(233, 30, 99)", "rgb(233, 30, 99)", "rgb(233, 30, 99)", "rgb(233, 30, 99)", "rgb(233, 30, 99)", "rgb(46, 184, 92)", "rgb(46, 184, 92)", "rgb(46, 184, 92)", "rgb(46, 184, 92)", "rgb(46, 184, 92)", "rgb(46, 184, 92)", "rgb(46, 184, 92)", "rgb(46, 184, 92)", "rgb(46, 184, 92)", "rgb(46, 184, 92)", "rgb(46, 184, 92)", "rgb(46, 184, 92)", "rgb(46, 184, 92)", "rgb(46, 184, 92)", "rgb(33, 150, 243)", "rgb(33, 150, 243)", "rgb(33, 150, 243)", "rgb(33, 150, 243)", "rgb(33, 150, 243)", "rgb(244, 81, 30)", "rgb(244, 81, 30)", "rgb(244, 81, 30)"],
+                x: [1e-06, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.46, 0.46, 0.46, 0.8, 0.8, 0.8, 0.8, 0.8, 1.26, 1.26, 1.26, 1.26, 1.26, 1.26, 0.46, 0.46, 0.46, 0.46, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.46, 0.46, 0.46, 0.8, 0.8, 0.8, 0.8, 0.8, 0.46, 0.46, 0.46, 0.46, 0.46, 0.46, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.46, 0.46, 0.46, 0.8, 0.8, 0.46, 0.46, 0.46, 0.46, 0.46, 0.8, 0.8, 0.8, 0.8, 0.8, 0.46, 0.46, 0.46, 0.46, 0.46, 0.46, 0.46, 0.46, 0.46, 0.46, 0.46, 0.46, 0.8, 0.8, 0.46, 0.46, 0.46, 0.46, 0.46, 0.46, 0.46, 0.46],
+                y: [0.5, 0.03, 0.12, 0.21, 0.33, 0.42, 0.5, 0.57, 0.7, 0.89, 0.98, 0.01, 0.03, 0.05, 0.01, 0.03, 0.05, 0.08, 0.1, 0.01, 0.03, 0.06, 0.08, 0.1, 0.12, 0.08, 0.1, 0.14, 0.16, 0.13, 0.15, 0.17, 0.19, 0.21, 0.23, 0.19, 0.21, 0.23, 0.26, 0.28, 0.3, 0.32, 0.34, 0.28, 0.3, 0.32, 0.34, 0.36, 0.38, 0.39, 0.41, 0.43, 0.45, 0.47, 0.49, 0.41, 0.43, 0.45, 0.52, 0.54, 0.48, 0.5, 0.52, 0.55, 0.57, 0.57, 0.59, 0.61, 0.63, 0.65, 0.6, 0.62, 0.64, 0.66, 0.68, 0.7, 0.72, 0.74, 0.76, 0.78, 0.8, 0.82, 0.82, 0.84, 0.85, 0.87, 0.89, 0.91, 0.93, 0.96, 0.98, 1.0],
+                hoverinfo: "none"
+            },
+            link: {
+                source: sources,
+                target: targets,
+                value: [3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 2, 2, 2, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 2, 2, 2, 1, 1, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
+                color: ["rgba(33, 150, 243, 0.8)", "rgba(244, 81, 30, 0.8)", "rgba(156, 39, 176, 0.8)", "rgba(255, 152, 0, 0.8)", "rgba(3, 169, 144, 0.8)", "rgba(255, 193, 7, 0.8)", "rgba(233, 30, 99, 0.8)", "rgba(46, 184, 92, 0.8)", "rgba(33, 150, 243, 0.8)", "rgba(244, 81, 30, 0.8)", "rgba(33, 150, 243, 0.8)", "rgba(33, 150, 243, 0.8)", "rgba(33, 150, 243, 0.8)", "rgba(33, 150, 243, 0.8)", "rgba(33, 150, 243, 0.8)", "rgba(33, 150, 243, 0.8)", "rgba(33, 150, 243, 0.8)", "rgba(33, 150, 243, 0.8)", "rgba(33, 150, 243, 0.8)", "rgba(33, 150, 243, 0.8)", "rgba(33, 150, 243, 0.8)", "rgba(33, 150, 243, 0.8)", "rgba(33, 150, 243, 0.8)", "rgba(33, 150, 243, 0.8)", "rgba(244, 81, 30, 0.8)", "rgba(244, 81, 30, 0.8)", "rgba(244, 81, 30, 0.8)", "rgba(244, 81, 30, 0.8)", "rgba(244, 81, 30, 0.8)", "rgba(244, 81, 30, 0.8)", "rgba(244, 81, 30, 0.8)", "rgba(244, 81, 30, 0.8)", "rgba(244, 81, 30, 0.8)", "rgba(244, 81, 30, 0.8)", "rgba(156, 39, 176, 0.8)", "rgba(156, 39, 176, 0.8)", "rgba(156, 39, 176, 0.8)", "rgba(156, 39, 176, 0.8)", "rgba(156, 39, 176, 0.8)", "rgba(156, 39, 176, 0.8)", "rgba(156, 39, 176, 0.8)", "rgba(156, 39, 176, 0.8)", "rgba(255, 152, 0, 0.8)", "rgba(255, 152, 0, 0.8)", "rgba(255, 152, 0, 0.8)", "rgba(255, 152, 0, 0.8)", "rgba(255, 152, 0, 0.8)", "rgba(255, 152, 0, 0.8)", "rgba(255, 152, 0, 0.8)", "rgba(255, 152, 0, 0.8)", "rgba(255, 152, 0, 0.8)", "rgba(255, 152, 0, 0.8)", "rgba(255, 152, 0, 0.8)", "rgba(255, 152, 0, 0.8)", "rgba(3, 169, 144, 0.8)", "rgba(3, 169, 144, 0.8)", "rgba(3, 169, 144, 0.8)", "rgba(3, 169, 144, 0.8)", "rgba(3, 169, 144, 0.8)", "rgba(255, 193, 7, 0.8)", "rgba(255, 193, 7, 0.8)", "rgba(255, 193, 7, 0.8)", "rgba(233, 30, 99, 0.8)", "rgba(233, 30, 99, 0.8)", "rgba(233, 30, 99, 0.8)", "rgba(233, 30, 99, 0.8)", "rgba(233, 30, 99, 0.8)", "rgba(233, 30, 99, 0.8)", "rgba(233, 30, 99, 0.8)", "rgba(46, 184, 92, 0.8)", "rgba(46, 184, 92, 0.8)", "rgba(46, 184, 92, 0.8)", "rgba(46, 184, 92, 0.8)", "rgba(46, 184, 92, 0.8)", "rgba(46, 184, 92, 0.8)", "rgba(46, 184, 92, 0.8)", "rgba(46, 184, 92, 0.8)", "rgba(46, 184, 92, 0.8)", "rgba(46, 184, 92, 0.8)", "rgba(46, 184, 92, 0.8)", "rgba(46, 184, 92, 0.8)", "rgba(46, 184, 92, 0.8)", "rgba(46, 184, 92, 0.8)", "rgba(33, 150, 243, 0.8)", "rgba(33, 150, 243, 0.8)", "rgba(33, 150, 243, 0.8)", "rgba(33, 150, 243, 0.8)", "rgba(33, 150, 243, 0.8)", "rgba(244, 81, 30, 0.8)", "rgba(244, 81, 30, 0.8)", "rgba(244, 81, 30, 0.8)"],
+                hoverinfo: "none"
+            }
+        }];
+        
+        const layout = {
+            font: { size: 14, family: "Arial", color: "white" },  
+            autosize: true,
+            margin: { l: 10, r: 350, t: 10, b: 10 },
+            paper_bgcolor: "black",
+            plot_bgcolor: "black",
+            hovermode: false,
+            xaxis: { range: [-0.1, 2.2] }
+        };
+        
+        const config = { displayModeBar: false, responsive: true };
+        
+        Plotly.newPlot('sankey-diagram', data, layout, config);
+        
+        // Setup interactivity
+        function setupInteractivity() {
+            const svg = document.getElementById('sankey-diagram').querySelector('svg');
+            if (!svg) {
+                setTimeout(setupInteractivity, 500);
+                return;
+            }
+            
+            const allPaths = svg.querySelectorAll('g.sankey-links path');
+            allPaths.forEach((path, index) => {
+                path.setAttribute('data-link-index', index);
+            });
+            
+            const nodeTexts = svg.querySelectorAll('g.sankey text');
+            nodeTexts.forEach((text, nodeIndex) => {
+                text.setAttribute('data-node-index', nodeIndex);
+                
+                // Set level attribute
+                const xPos = parseFloat(data[0].node.x[nodeIndex]);
+                let level = 0;
+                if (xPos < 0.1) level = 0;
+                else if (xPos < 0.3) level = 1;
+                else if (xPos < 0.7) level = 2;
+                else if (xPos < 1.0) level = 3;
+                else level = 4;
+                
+                text.setAttribute('data-level', level);
+                
+                // Create hit area
+                const parentG = text.parentElement;
+                if (parentG) {
+                    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                    const bbox = text.getBBox();
+                    rect.setAttribute('x', bbox.x - 5);
+                    rect.setAttribute('y', bbox.y - 5);
+                    rect.setAttribute('width', bbox.width + 10);
+                    rect.setAttribute('height', bbox.height + 10);
+                    rect.setAttribute('fill', 'transparent');
+                    rect.setAttribute('data-node-index', nodeIndex);
+                    rect.style.cursor = 'pointer';
+                    parentG.insertBefore(rect, text);
+                    
+                    // Hover events for hit area
+                    rect.addEventListener('mouseenter', () => highlightPaths(nodeIndex));
+                    rect.addEventListener('mouseleave', resetHighlights);
+                }
+                
+                // Hover events for text
+                text.addEventListener('mouseenter', () => highlightPaths(nodeIndex));
+                text.addEventListener('mouseleave', resetHighlights);
+            });
+            
+            // Path hover events
+            allPaths.forEach((path, linkIndex) => {
+                path.addEventListener('mouseenter', () => {
+                    const sourceNode = sources[linkIndex];
+                    highlightPathsFromSource(sourceNode, linkIndex);
+                });
+                path.addEventListener('mouseleave', resetHighlights);
+            });
+            
+            function highlightPaths(nodeIndex) {
+                const downstreamLinks = findDownstreamPaths(nodeIndex);
+                
+                // Highlight paths
+                downstreamLinks.forEach(idx => {
+                    const path = svg.querySelector(`path[data-link-index="${idx}"]`);
+                    if (path) path.classList.add('highlighted');
+                });
+                
+                // Highlight labels
+                const affectedTargets = downstreamLinks.map(idx => targets[idx]);
+                affectedTargets.forEach(targetNodeId => {
+                    const label = svg.querySelector(`text[data-node-index="${targetNodeId}"]`);
+                    if (label) label.classList.add('highlighted');
+                });
+                
+                // Highlight current node
+                const currentNode = svg.querySelector(`text[data-node-index="${nodeIndex}"]`);
+                if (currentNode) currentNode.classList.add('highlighted');
+            }
+            
+            function highlightPathsFromSource(sourceNodeIndex, linkIndex) {
+                const downstreamLinks = findDownstreamPaths(sourceNodeIndex);
+                
+                // Highlight paths
+                downstreamLinks.forEach(idx => {
+                    const path = svg.querySelector(`path[data-link-index="${idx}"]`);
+                    if (path) path.classList.add('highlighted');
+                });
+                
+                // Highlight current path
+                const currentPath = svg.querySelector(`path[data-link-index="${linkIndex}"]`);
+                if (currentPath) currentPath.classList.add('highlighted');
+                
+                // Highlight affected labels
+                const affectedNodes = findAffectedLabels(linkIndex);
+                affectedNodes.forEach(nodeId => {
+                    const label = svg.querySelector(`text[data-node-index="${nodeId}"]`);
+                    if (label) label.classList.add('highlighted');
+                });
+            }
+            
+            function resetHighlights() {
+                allPaths.forEach(p => p.classList.remove('highlighted'));
+                nodeTexts.forEach(t => t.classList.remove('highlighted'));
+            }
+        }
+        
+        // Make sure interactivity is set up after plotting
+        document.addEventListener('DOMContentLoaded', setupInteractivity);
+        window.addEventListener('resize', () => {
+            Plotly.Plots.resize(document.getElementById('sankey-diagram'));
+        });
+        setTimeout(setupInteractivity, 1000);
+    </script>
+</body>
+</html>
